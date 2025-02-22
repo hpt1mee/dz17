@@ -16,12 +16,34 @@ wss.on('connection', ws => {
 		const currentTime = new Date().toLocaleTimeString()
 		ws.send(`время: ${currentTime}`)
 	}
-	
 
 	const interval = setInterval(sendTime, 1000)
 	ws.on('close', () => {
 		clearInterval(interval)
 	})
+})
+
+app.get('/users/:id', (req, res) => {
+	const userId = req.params.id
+	fs.readFile('users.json', 'utf8', (err, data) => {
+		const users = JSON.parse(data)
+		const user = users.find(user => user.id == userId)
+		if (user) {
+			res.send(`
+			<p>Name: ${user.name}</p>
+			<p>Age: ${user.age}</p>
+   `)
+		} else res.status(404).send('User not found')
+	})
+})
+
+app.get('/search', (req, res) => {
+	const query = req.query.query.toLowerCase()
+	const words = ['яблоко', 'банан', 'апельсин', 'ананас']
+
+	const result = words.filter(word => word.includes(query))
+
+	res.json({ result })
 })
 
 app.get('/time', (req, res) => {
@@ -48,7 +70,6 @@ app.get('/time', (req, res) => {
 
 app.get('/download', (req, res) => {
 	const example = path.join(__dirname, 'public', 'docs', 'example.pdf')
-	res.send(`скачивание`)
 	res.download(example)
 })
 
@@ -56,6 +77,7 @@ function admin(req, res, next) {
 	if (req.headers['x-admin'] == 'true') next()
 	else res.status(403).send('доступ запрещен')
 }
+
 
 app.get('/admin', admin, (req, res) => {
 	const files = path.join(__dirname, 'public')
